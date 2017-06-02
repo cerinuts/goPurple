@@ -8,3 +8,11 @@ type TwitchIRCListener struct{
 	
 }
 
+func (til *TwitchIRCListener) Trigger(ae ArchiumEvent){
+	
+}
+	
+func (til *TwitchIRCListener) GetType() string{
+	
+}
+

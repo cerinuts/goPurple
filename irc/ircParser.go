@@ -1,13 +1,51 @@
 package irc
 
 import (
-
+	"regexp"
 )
 
-type IrcParser struct{
-	
+type IrcMessage struct {
+	Tags                       map[string]string
+	Raw, Channel, Msg, Command string
 }
 
-func (ircParser *IrcParser) Parse(line string){
+type IrcParser struct {
+}
+
+var regexMsg = "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+ )?#(\\S+)?(?: [:](.+))?$"
+var regexTags = "([^=;]+)=([^;]*)"
+
+var RAW = 0
+var TAGS = 1
+var SOURCE = 2
+var COMMAND = 3
+var CHANNEL = 4
+var MESSAGE = 5
+
+func (ircParser *IrcParser) Parse(line string) {
 	println(line)
+	parsed := regexp.MustCompile(regexMsg).FindAllStringSubmatch(line, -1)
+	if parsed != nil {
+		result := new(IrcMessage)
+		pLine := parsed[0]
+		result.Raw = pLine[RAW]
+		result.Channel = pLine[CHANNEL]
+		result.Msg = pLine[MESSAGE]
+		result.Command = pLine[COMMAND]
+		val := regexp.MustCompile(regexTags).FindAllStringSubmatch(pLine[TAGS], -1)
+		if val != nil {
+			result.Tags = make(map[string]string)
+			for i, _ := range val {
+				for range val[i] {
+					result.Tags[val[i][1]] = val[i][2]
+				}
+			}
+
+		}
+//		for k, v := range result.Tags {
+//			println(k, v)
+//		}
+
+	}
+
 }
