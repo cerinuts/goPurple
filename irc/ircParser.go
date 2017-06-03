@@ -12,17 +12,17 @@ type IrcMessage struct {
 type IrcParser struct {
 }
 
-var regexMsg = "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+ )?#(\\S+)?(?: [:](.+))?$"
+var regexMsg = "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: #?(?:)(.+?))?(?: [:](.+))?$"
 var regexTags = "([^=;]+)=([^;]*)"
 
 var RAW = 0
 var TAGS = 1
-var SOURCE = 2
+var SERVER = 2
 var COMMAND = 3
 var CHANNEL = 4
 var MESSAGE = 5
 
-func (ircParser *IrcParser) Parse(line string) {
+func (ircParser *IrcParser) Parse(line string) *IrcMessage {
 	println(line)
 	parsed := regexp.MustCompile(regexMsg).FindAllStringSubmatch(line, -1)
 	if parsed != nil {
@@ -42,10 +42,15 @@ func (ircParser *IrcParser) Parse(line string) {
 			}
 
 		}
-//		for k, v := range result.Tags {
-//			println(k, v)
-//		}
+		//		for k, v := range result.Tags {
+		//			println(k, v)
+		//		}
+
+		return result
 
 	}
-
+	println("Couldnt be parsed")
+	return nil
 }
+
+
