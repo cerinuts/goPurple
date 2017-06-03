@@ -1,7 +1,6 @@
 package irc
 
 import (
-	"regexp"
 	"testing"
 )
 
@@ -28,6 +27,8 @@ func TestRegex(t *testing.T) {
 	in14 := ":tmi.twitch.tv CAP * ACK :twitch.tv/membership"
 	in15 := ":tmi.twitch.tv CAP * ACK :twitch.tv/tags"
 	in16 := ":tmi.twitch.tv CAP * ACK :twitch.tv/commands"
+	// ping
+	in17 := "PING :tmi.twitch.tv"
 	//someone joins
 	in18 := ":<user>!<user>@<user>.tmi.twitch.tv JOIN #<channel>"
 	//mod/unmod
@@ -59,7 +60,7 @@ func TestRegex(t *testing.T) {
 	//host
 	in34 := ":tmi.twitch.tv HOSTTARGET #hosting_channel <channel> [<number-of-viewers>]"
 	//unhost
-	in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
+in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
 	//notice
 	in36 := "@msg-id=slow_off :tmi.twitch.tv NOTICE #dallas :This room is no longer in slow mode."
 	//Reconnect
@@ -67,105 +68,116 @@ func TestRegex(t *testing.T) {
 	//Roomstate no tag
 	in38 := ":tmi.twitch.tv ROOMSTATE #<channel>"
 	//usernotice no tag
-	in39 := ":tmi.twitch.tv USERNOTICE #<channel> :message"
+	in39 := ":tmi.twitch.tv USERNOTICE #<channel> :<message>"
+	//sub withouth message
+	in40 := "@badges=<badges>;color=<color>;display-name=<display-name>;emotes=<emotes>;mod=<mod>;msg-id=<msg-id>;msg-param-months=<msg-param-months>;msg-param-sub-plan=<msg-param-sub-plan>;msg-param-sub-plan-name=<msg-param-sub-plan-name>;room-id=<room-id>;subscriber=<subscriber>;system-msg=<system-msg>;login=<user>;turbo=<turbo>;user-id=<user-id>;user-type=<user-type> :tmi.twitch.tv USERNOTICE #<channel>"
+	
 
 	println("---1---")
-	parse(in1)
+	tparse(in1)
 	println("---2---")
-	parse(in2)
+	tparse(in2)
 	println("---3---")
-	parse(in3)
+	tparse(in3)
 	println("---4---")
-	parse(in4)
+	tparse(in4)
 	println("---5---")
-	parse(in5)
+	tparse(in5)
 	println("---6---")
-	parse(in6)
+	tparse(in6)
 	println("---7---")
-	parse(in7)
+	tparse(in7)
 	println("---8---")
-	parse(in8)
+	tparse(in8)
 	println("---9---")
-	parse(in9)
+	tparse(in9)
 	println("---10---")
-	parse(in10)
+	tparse(in10)
 	println("---11---")
-	parse(in11)
+	tparse(in11)
 	println("---12---")
-	parse(in12)
+	tparse(in12)
 	println("---13---")
-	parse(in13)
+	tparse(in13)
 	println("---14---")
-	parse(in14)
+	tparse(in14)
 	println("---15---")
-	parse(in15)
+	tparse(in15)
 	println("---16---")
-	parse(in16)
-	println("---17 SKIP---")
-	//	parse(in17)
+	tparse(in16)
+	println("---17---")
+	tparse(in17)
 	println("---18---")
-	parse(in18)
+	tparse(in18)
 	println("---19---")
-	parse(in19)
+	tparse(in19)
 	println("---20---")
-	parse(in20)
+	tparse(in20)
 	println("---21---")
-	parse(in21)
+	tparse(in21)
 	println("---22---")
-	parse(in22)
+	tparse(in22)
 	println("---23---")
-	parse(in23)
+	tparse(in23)
 	println("---24---")
-	parse(in24)
+	tparse(in24)
 	println("---25---")
-	parse(in25)
+	tparse(in25)
 	println("---26---")
-	parse(in26)
+	tparse(in26)
 	println("---27---")
-	parse(in27)
+	tparse(in27)
 	println("---28---")
-	parse(in28)
+	tparse(in28)
 	println("---29---")
-	parse(in29)
+	tparse(in29)
 	println("---30---")
-	parse(in30)
+	tparse(in30)
 	println("---31---")
-	parse(in31)
+	tparse(in31)
 	println("---32---")
-	parse(in32)
+	tparse(in32)
 	println("---33---")
-	parse(in33)
+	tparse(in33)
 	println("---34---")
-	parse(in34)
+	tparse(in34)
 	println("---35---")
-	parse(in35)
+	tparse(in35)
 	println("---36---")
-	parse(in36)
+	tparse(in36)
 	println("---37---")
-	parse(in37)
+	tparse(in37)
 	println("---38---")
-	parse(in38)
+	tparse(in38)
 	println("---39---")
-	parse(in39)
+	tparse(in39)
+	println("---40---")
+	tparse(in40)
 	println("---end---")
+
+//	for i := 0; i < 1000000; i++{
+//		tparse(in27)
+//	}
 }
 
-func parse(line string) {
+func tparse(line string) {
 	//orig := ""^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+ )?#?(\\S+)?(?: [:](.+))?$""
 	//  re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: (?!:)(.+?))?(?: [:](.+))?$"
 	//	re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: ([.*[^:]])(.+?))?(?: [:](.+))?$"
-//	re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: #?([\\S]+?))?(?: [:](.+))?$"
-	re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: #?(?:)(.+?))?(?: [:](.+))?$"
-	val := regexp.MustCompile(re).FindAllStringSubmatch(line, -1)
-	if val != nil {
-		//			result.Tags = make(map[string]string)
-
-		for i, _ := range val {
-			println(val[i][0])
-			println("1:", val[i][1], "2:", val[i][2], "3:", val[i][3], "4:", val[i][4], "5:", val[i][5])
-		}
-
-	} else {
-		println("err")
-	}
+	//	re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: #?([\\S]+?))?(?: [:](.+))?$"
+	//	re := "^(?:@([^ ]+) )?(?:[:](\\S+) )?(\\S+)(?: #?(?:)(.+?))?(?: [:](.+))?$"
+	//	val := regexp.MustCompile(re).FindAllStringSubmatch(line, -1)
+	//	if val != nil {
+	//		//			result.Tags = make(map[string]string)
+	//
+	//		for i, _ := range val {
+	//			println(val[i][0])
+	//			println("1:", val[i][1], "2:", val[i][2], "3:", val[i][3], "4:", val[i][4], "5:", val[i][5])
+	//		}
+	//
+	//	} else {
+	//		println("err")
+	//	}
+	msg := Parse(line)
+		println(msg.Command, msg.Source, msg.Channel, msg.Msg)
 }

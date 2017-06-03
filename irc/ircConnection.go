@@ -1,9 +1,9 @@
 package irc
 
 import (
+	"fmt"
 	"github.com/ceriath/goBlue/archium"
 	"github.com/ceriath/goBlue/network"
-	"fmt"
 	"strings"
 )
 
@@ -43,7 +43,7 @@ func (ircConn *IrcConnection) start() {
 			waitingChannel <- struct{}{}
 			return
 		}
-		result := new(IrcParser).Parse(line)
+		result := Parse(line)
 		if result != nil {
 			ev := archium.CreateEvent(1)
 			ev.EventType = archiumPrefix + result.Channel + "." + strings.ToLower(result.Command)
