@@ -9,7 +9,7 @@ type IrcMessage struct {
 	Raw, Channel, Msg, Command, Source string
 }
 
-var globalChannel string = "GLOBAL"
+var globalChannel string = "global"
 
 func Parse(line string) *IrcMessage {
 	msg := new(IrcMessage)

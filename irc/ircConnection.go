@@ -1,8 +1,8 @@
 package irc
 
 import (
-	"fmt"
 	"github.com/ceriath/goBlue/archium"
+	"github.com/ceriath/goBlue/log"
 	"github.com/ceriath/goBlue/network"
 	"strings"
 )
@@ -10,24 +10,30 @@ import (
 var waitingChannel = make(chan struct{})
 var archiumCore = archium.ArchiumCore
 
-var archiumPrefix = "twitch.irc."
-var archiumDataIdentifier = "MessageAdress"
+var ArchiumPrefix = "twitch.irc."
+var ArchiumDataIdentifier = "Message"
 
 type IrcConnection struct {
-	client *network.Client
+	client          *network.Client
+	oauth, username, ip, port string
 }
 
-func (ircConn *IrcConnection) Connect() {
+func (ircConn *IrcConnection) Connect(ip, port string) {
 	cli := new(network.Client)
+	ircConn.ip = ip
+	ircConn.port = port
 	ircConn.client = cli
-	ircConn.client.Connect("irc.twitch.tv", "6667")
+	ircConn.client.Connect(ip, port)
 }
 
 func (ircConn *IrcConnection) Init(oauth, nick string) {
 	til := new(TwitchIRCListener)
-	til.ArchiumDataIdentifier = archiumDataIdentifier
-	til.ArchiumPrefix = archiumPrefix
+	til.ArchiumDataIdentifier = ArchiumDataIdentifier
+	til.ArchiumPrefix = ArchiumPrefix
+	til.IrcConn = ircConn
 	archiumCore.Register(til)
+	ircConn.oauth = oauth
+	ircConn.username = nick
 	ircConn.Sendln("PASS " + oauth)
 	ircConn.Sendln("NICK " + nick)
 	ircConn.Sendln("CAP REQ :twitch.tv/tags")
@@ -46,9 +52,9 @@ func (ircConn *IrcConnection) start() {
 		result := Parse(line)
 		if result != nil {
 			ev := archium.CreateEvent(1)
-			ev.EventType = archiumPrefix + result.Channel + "." + strings.ToLower(result.Command)
+			ev.EventType = ArchiumPrefix + result.Channel + "." + strings.ToLower(result.Command)
 			ev.EventSource = result.Channel
-			ev.Data[archiumDataIdentifier] = fmt.Sprintf("%p", &result)
+			ev.Data[ArchiumDataIdentifier] = result
 			archiumCore.FireEvent(*ev)
 		}
 	}
@@ -56,6 +62,7 @@ func (ircConn *IrcConnection) start() {
 }
 
 func (ircConn *IrcConnection) Sendln(line string) {
+	log.D("SENT", line)
 	ircConn.client.Sendln(line)
 }
 
@@ -64,6 +71,7 @@ func (ircConn *IrcConnection) Wait() {
 }
 
 func (ircConn *IrcConnection) Send(line, channel string) {
+	log.D("SENT", line)
 	ircConn.client.Sendln("PRIVMSG #" + channel + " :" + line)
 }
 
@@ -78,4 +86,11 @@ func (ircConn *IrcConnection) Leave(channel string) {
 func (ircConn *IrcConnection) Quit() {
 	ircConn.client.Sendln("QUIT")
 	ircConn.client.Close()
+}
+
+func (ircConn *IrcConnection) Reconnect() {
+	ircConn.client.Close()
+	ircConn.Connect(ircConn.ip, ircConn.port)
+	ircConn.Init(ircConn.oauth, ircConn.username)
+	go ircConn.start()
 }
