@@ -18,12 +18,13 @@ type IrcConnection struct {
 	oauth, username, ip, port string
 }
 
-func (ircConn *IrcConnection) Connect(ip, port string) {
+func (ircConn *IrcConnection) Connect(ip, port string) error{
 	cli := new(network.Client)
 	ircConn.ip = ip
 	ircConn.port = port
 	ircConn.client = cli
-	ircConn.client.Connect(ip, port)
+	err := ircConn.client.Connect(ip, port)
+	return err
 }
 
 func (ircConn *IrcConnection) Init(oauth, nick string) {
