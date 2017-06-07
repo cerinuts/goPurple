@@ -28,6 +28,7 @@ func Parse(line string) *IrcMessage {
 		parse(line, msg)
 	} else if strings.HasPrefix(line, "PING") {
 		msg.Command = "PING"
+		msg.Channel = globalChannel
 		msg.Source = strings.SplitN(line, ":", 2)[1]
 	}
 	return msg
