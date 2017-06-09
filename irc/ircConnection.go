@@ -15,13 +15,14 @@ var ArchiumDataIdentifier = "Message"
 
 type IrcConnection struct {
 	client          *network.Client
-	oauth, username, ip, port string
+	oauth, Username, Host, Port string
+	JoinedChannels	[]string
 }
 
 func (ircConn *IrcConnection) Connect(ip, port string) error{
 	cli := new(network.Client)
-	ircConn.ip = ip
-	ircConn.port = port
+	ircConn.Host = ip
+	ircConn.Port = port
 	ircConn.client = cli
 	err := ircConn.client.Connect(ip, port)
 	return err
@@ -34,7 +35,7 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 	til.IrcConn = ircConn
 	archiumCore.Register(til)
 	ircConn.oauth = oauth
-	ircConn.username = nick
+	ircConn.Username = nick
 	ircConn.Sendln("PASS " + oauth)
 	ircConn.Sendln("NICK " + nick)
 	ircConn.Sendln("CAP REQ :twitch.tv/tags")
@@ -77,10 +78,17 @@ func (ircConn *IrcConnection) Send(line, channel string) {
 }
 
 func (ircConn *IrcConnection) Join(channel string) {
+	ircConn.JoinedChannels = append(ircConn.JoinedChannels, channel)
 	ircConn.client.Sendln("JOIN #" + channel)
 }
 
 func (ircConn *IrcConnection) Leave(channel string) {
+	for i, c := range ircConn.JoinedChannels{
+		if c == channel{
+			ircConn.JoinedChannels = append(ircConn.JoinedChannels[:i], ircConn.JoinedChannels[i+1:]...)
+			break
+		}
+	}
 	ircConn.client.Sendln("PART #" + channel)
 }
 
@@ -91,7 +99,7 @@ func (ircConn *IrcConnection) Quit() {
 
 func (ircConn *IrcConnection) Reconnect() {
 	ircConn.client.Close()
-	ircConn.Connect(ircConn.ip, ircConn.port)
-	ircConn.Init(ircConn.oauth, ircConn.username)
+	ircConn.Connect(ircConn.Host, ircConn.Port)
+	ircConn.Init(ircConn.oauth, ircConn.Username)
 	go ircConn.start()
 }
