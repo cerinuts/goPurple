@@ -21,6 +21,7 @@ func (til *TwitchIRCListener) Trigger(ae archium.ArchiumEvent){
 	if(msg.Command == "RECONNECT"){
 		(*(til.IrcConn)).Reconnect()
 		log.I("Forced Reconnect...")
+		//Might aswell be handled by general reconnect recovery. I'll leave this here until confirmed what happens exactly.
 	}
 }
 	

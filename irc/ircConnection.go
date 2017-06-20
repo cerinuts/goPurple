@@ -5,6 +5,7 @@ import (
 	"github.com/ceriath/goBlue/log"
 	"github.com/ceriath/goBlue/network"
 	"strings"
+	"time"
 )
 
 var waitingChannel = make(chan struct{})
@@ -14,12 +15,13 @@ var ArchiumPrefix = "twitch.irc."
 var ArchiumDataIdentifier = "Message"
 
 type IrcConnection struct {
-	client          *network.Client
+	client                      *network.Client
 	oauth, Username, Host, Port string
-	JoinedChannels	[]string
+	JoinedChannels              []string
+	currentReconnectAttempts    int
 }
 
-func (ircConn *IrcConnection) Connect(ip, port string) error{
+func (ircConn *IrcConnection) Connect(ip, port string) error {
 	cli := new(network.Client)
 	ircConn.Host = ip
 	ircConn.Port = port
@@ -48,12 +50,13 @@ func (ircConn *IrcConnection) start() {
 		line, err := ircConn.client.Recv()
 		if err != nil {
 			println("Error occured", err.Error())
-			waitingChannel <- struct{}{}
+			ircConn.Reconnect()
+			//			waitingChannel <- struct{}{}
 			return
 		}
 		result := Parse(line)
 		if result != nil {
-			ev := archium.CreateEvent(1)
+			ev := archium.CreateEvent()
 			ev.EventType = ArchiumPrefix + result.Channel + "." + strings.ToLower(result.Command)
 			ev.EventSource = result.Channel
 			ev.Data[ArchiumDataIdentifier] = result
@@ -83,8 +86,8 @@ func (ircConn *IrcConnection) Join(channel string) {
 }
 
 func (ircConn *IrcConnection) Leave(channel string) {
-	for i, c := range ircConn.JoinedChannels{
-		if c == channel{
+	for i, c := range ircConn.JoinedChannels {
+		if c == channel {
 			ircConn.JoinedChannels = append(ircConn.JoinedChannels[:i], ircConn.JoinedChannels[i+1:]...)
 			break
 		}
@@ -98,8 +101,14 @@ func (ircConn *IrcConnection) Quit() {
 }
 
 func (ircConn *IrcConnection) Reconnect() {
-	ircConn.client.Close()
+	//	ircConn.client.Close()
+	if ircConn.currentReconnectAttempts >= 11 {
+		log.F("11 attempts to reconnect failed, giving up.")
+		return
+	}
+	ircConn.currentReconnectAttempts++
+	log.I("Trying to recover, attempt:", ircConn.currentReconnectAttempts)
+	time.Sleep(time.Duration(ircConn.currentReconnectAttempts*10) * time.Second)
 	ircConn.Connect(ircConn.Host, ircConn.Port)
 	ircConn.Init(ircConn.oauth, ircConn.Username)
-	go ircConn.start()
 }
