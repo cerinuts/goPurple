@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "1", "0", "d"
+const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
+
 var waitingChannel = make(chan struct{})
 var archiumCore = archium.ArchiumCore
 
@@ -19,6 +22,7 @@ type IrcConnection struct {
 	oauth, Username, Host, Port string
 	JoinedChannels              []string
 	currentReconnectAttempts    int
+	closed 						bool
 }
 
 func (ircConn *IrcConnection) Connect(ip, port string) error {
@@ -27,6 +31,9 @@ func (ircConn *IrcConnection) Connect(ip, port string) error {
 	ircConn.Port = port
 	ircConn.client = cli
 	err := ircConn.client.Connect(ip, port)
+	if err == nil{
+		ircConn.closed = false
+	}
 	return err
 }
 
@@ -49,7 +56,10 @@ func (ircConn *IrcConnection) start() {
 	for {
 		line, err := ircConn.client.Recv()
 		if err != nil {
-			println("Error occured", err.Error())
+			if ircConn.closed{
+				return
+			}
+			log.E("Error occured", err.Error())
 			ircConn.Reconnect()
 			//			waitingChannel <- struct{}{}
 			return
@@ -76,7 +86,7 @@ func (ircConn *IrcConnection) Wait() {
 }
 
 func (ircConn *IrcConnection) Send(line, channel string) {
-	log.D("SENT", line)
+	log.D("SENT", "PRIVMSG #" + channel + " :" + line)
 	ircConn.client.Sendln("PRIVMSG #" + channel + " :" + line)
 }
 
@@ -96,6 +106,7 @@ func (ircConn *IrcConnection) Leave(channel string) {
 }
 
 func (ircConn *IrcConnection) Quit() {
+	ircConn.closed = true
 	ircConn.client.Sendln("QUIT")
 	ircConn.client.Close()
 }
