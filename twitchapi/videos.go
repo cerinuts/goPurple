@@ -1,13 +1,14 @@
-package api
+package twitchapi
 
 import (
+	"encoding/json"
 	"time"
 )
 
 type Video struct {
-	ID            string `json:"_id"`
-	BroadcastID   int64  `json:"broadcast_id"`
-	BroadcastType string `json:"broadcast_type"`
+	ID            json.Number `json:"_id"`
+	BroadcastID   json.Number `json:"broadcast_id"`
+	BroadcastType string      `json:"broadcast_type"`
 	Channel       struct {
 		ID          string `json:"_id"`
 		DisplayName string `json:"display_name"`
@@ -71,3 +72,4 @@ type Videos struct {
 	Total  int     `json:"_total"`
 	Videos []Video `json:"videos"`
 }
+

@@ -1,11 +1,11 @@
-package api
+package twitchapi
 
 import (
-
+"encoding/json"
 )
 
 type Community struct {
-	ID              string `json:"_id"`
+	ID              json.Number `json:"_id"`
 	AvatarImageURL  string `json:"avatar_image_url"`
 	CoverImageURL   string `json:"cover_image_url"`
 	Description     string `json:"description"`

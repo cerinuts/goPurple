@@ -1,32 +1,34 @@
-package api
+package twitchapi
 
 import (
+	"encoding/json"
 	"github.com/ceriath/goBlue/network"
+	"time"
 )
 
 type ChannelAuthenticated struct {
-	Mature                          bool   `json:"mature"`
-	Status                          string `json:"status"`
-	Broadcaster_language            string `json:"broadcaster_language"`
-	Display_name                    string `json:"display_name"`
-	Game                            string `json:"game"`
-	Language                        string `json:"language"`
-	ID                              string `json:"_id"`
-	Name                            string `json:"name"`
-	Created_at                      string `json:"created_at"`
-	Updated_at                      string `json:"updated_at"`
-	Partner                         bool   `json:"partner"`
-	Logo                            string `json:"logo"`
-	Video_banner                    string `json:"video_banner"`
-	Profile_banner                  string `json:"profile_banner"`
-	Profile_banner_background_color string `json:"profile_banner_background_color"`
-	Url                             string `json:"url"`
-	Views                           int    `json:"views"`
-	Followers                       int    `json:"followers"`
-	Broadcaster_type                string `json:"broadcaster_type"`
-	Description                     string `json:"description"`
-	Stream_key                      string `json:"stream_key"`
-	Email                           string `json:"email"`
+	Mature                          bool        `json:"mature"`
+	Status                          string      `json:"status"`
+	Broadcaster_language            string      `json:"broadcaster_language"`
+	Display_name                    string      `json:"display_name"`
+	Game                            string      `json:"game"`
+	Language                        string      `json:"language"`
+	ID                              json.Number `json:"_id"`
+	Name                            string      `json:"name"`
+	Created_at                      time.Time   `json:"created_at"`
+	Updated_at                      time.Time   `json:"updated_at"`
+	Partner                         bool        `json:"partner"`
+	Logo                            string      `json:"logo"`
+	Video_banner                    string      `json:"video_banner"`
+	Profile_banner                  string      `json:"profile_banner"`
+	Profile_banner_background_color string      `json:"profile_banner_background_color"`
+	Url                             string      `json:"url"`
+	Views                           int         `json:"views"`
+	Followers                       int         `json:"followers"`
+	Broadcaster_type                string      `json:"broadcaster_type"`
+	Description                     string      `json:"description"`
+	Stream_key                      string      `json:"stream_key"`
+	Email                           string      `json:"email"`
 }
 
 func (tk *TwitchKraken) GetChannelAuthenticated(oauth string) (resp *ChannelAuthenticated, jsoerr *network.JsonError, err error) {
@@ -41,26 +43,26 @@ func (tk *TwitchKraken) GetChannelAuthenticated(oauth string) (resp *ChannelAuth
 }
 
 type Channel struct {
-	Mature                          bool   `json:"mature"`
-	Status                          string `json:"status"`
-	Broadcaster_language            string `json:"broadcaster_language"`
-	Display_name                    string `json:"display_name"`
-	Game                            string `json:"game"`
-	Language                        string `json:"language"`
-	ID                              string `json:"_id"`
-	Name                            string `json:"name"`
-	Created_at                      string `json:"created_at"`
-	Updated_at                      string `json:"updated_at"`
-	Partner                         bool   `json:"partner"`
-	Logo                            string `json:"logo"`
-	Video_banner                    string `json:"video_banner"`
-	Profile_banner                  string `json:"profile_banner"`
-	Profile_banner_background_color string `json:"profile_banner_background_color"`
-	Url                             string `json:"url"`
-	Views                           int    `json:"views"`
-	Followers                       int    `json:"followers"`
-	Description                     string `json:"description"`
-	Broadcaster_type                string `json:"broadcaster_type"`
+	Mature                          bool        `json:"mature"`
+	Status                          string      `json:"status"`
+	Broadcaster_language            string      `json:"broadcaster_language"`
+	Display_name                    string      `json:"display_name"`
+	Game                            string      `json:"game"`
+	Language                        string      `json:"language"`
+	ID                              json.Number `json:"_id"`
+	Name                            string      `json:"name"`
+	Created_at                      time.Time   `json:"created_at"`
+	Updated_at                      time.Time   `json:"updated_at"`
+	Partner                         bool        `json:"partner"`
+	Logo                            string      `json:"logo"`
+	Video_banner                    string      `json:"video_banner"`
+	Profile_banner                  string      `json:"profile_banner"`
+	Profile_banner_background_color string      `json:"profile_banner_background_color"`
+	Url                             string      `json:"url"`
+	Views                           int         `json:"views"`
+	Followers                       int         `json:"followers"`
+	Description                     string      `json:"description"`
+	Broadcaster_type                string      `json:"broadcaster_type"`
 }
 
 func (tk *TwitchKraken) GetChannel(channelId string) (resp *Channel, jsoerr *network.JsonError, err error) {
@@ -158,11 +160,11 @@ func (tk *TwitchKraken) GetChannelTeams(channelId string) (resp *Teams, jsoerr *
 }
 
 type Subscriber struct {
-	ID            string `json:"_id"`
-	Created_at    string `json:"created_at"`
-	Sub_plan      string `json:"sub_plan"`
-	Sub_plan_name string `json:"sub_plan_name"`
-	Subscriber    User   `json:"user"`
+	ID            json.Number `json:"_id"`
+	Created_at    time.Time      `json:"created_at"`
+	Sub_plan      string      `json:"sub_plan"`
+	Sub_plan_name string      `json:"sub_plan_name"`
+	Subscriber    User        `json:"user"`
 }
 
 type Subscribers struct {
@@ -211,7 +213,7 @@ func (tk *TwitchKraken) GetChannelVideos(channelId, optLimit, optOffset, optBroa
 	hMap := make(map[string]string)
 	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
 	hMap["Client-ID"] = tk.ClientID
-	
+
 	if optLimit == "" {
 		optLimit = "10"
 	}
@@ -219,16 +221,16 @@ func (tk *TwitchKraken) GetChannelVideos(channelId, optLimit, optOffset, optBroa
 	if optOffset == "" {
 		optOffset = "0"
 	}
-	
+
 	if optSort == "time" {
 		optSort = "time"
 	}
-	
+
 	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/channels/"+channelId+"/videos?limit="+optLimit+"&offset="+optOffset+"&broadcast_type="+optBroadcastType+"&language="+optLanguage+"&sort="+optSort, hMap, &resp)
 	return
 }
 
-type CommercialLength struct{
+type CommercialLength struct {
 	Length int `json:"Length"`
 }
 
@@ -246,7 +248,7 @@ func (tk *TwitchKraken) RunCommercial(oauth, channelId string, length *Commercia
 	hMap["Client-ID"] = tk.ClientID
 	hMap["Content-Type"] = "application/json"
 	hMap["Authorization"] = "OAuth " + oauth
-	jsoerr, err = jac.Post("https://api.twitch.tv/kraken/channels/"+channelId+"/videos", hMap, length ,&resp)
+	jsoerr, err = jac.Post("https://api.twitch.tv/kraken/channels/"+channelId+"/videos", hMap, length, &resp)
 	return
 }
 
@@ -261,7 +263,6 @@ func (tk *TwitchKraken) ResetStreamkey(oauth, channelId string) (resp *ChannelAu
 	return
 }
 
-
 func (tk *TwitchKraken) GetChannelCommunities(channelId string) (resp *Communities, jsoerr *network.JsonError, err error) {
 	resp = new(Communities)
 	jac := new(network.JsonApiClient)
@@ -272,11 +273,11 @@ func (tk *TwitchKraken) GetChannelCommunities(channelId string) (resp *Communiti
 	return
 }
 
-type CommunityIds struct{
+type CommunityIds struct {
 	Community_ids []string `json:"community_ids"`
 }
 
-func (tk *TwitchKraken) AddChannelToCommunities(oauth, channelId string, communityIds CommunityIds) ( jsoerr *network.JsonError, err error) {
+func (tk *TwitchKraken) AddChannelToCommunities(oauth, channelId string, communityIds CommunityIds) (jsoerr *network.JsonError, err error) {
 	jac := new(network.JsonApiClient)
 	hMap := make(map[string]string)
 	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
@@ -296,12 +297,3 @@ func (tk *TwitchKraken) RemoveChannelFromAllCommunites(oauth, channelId string) 
 	jsoerr, err = jac.Delete("https://api.twitch.tv/kraken/channels/"+channelId+"/community", hMap, nil)
 	return
 }
-
-
-
-
-
-
-
-
-
