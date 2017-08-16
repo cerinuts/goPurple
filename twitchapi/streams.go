@@ -10,10 +10,10 @@ type Stream struct {
 	Stream struct {
 		ID          json.Number `json:"_id"`
 		Game        string      `json:"game"`
-		Viewers     int         `json:"viewers"`
-		VideoHeight int         `json:"video_height"`
-		AverageFps  int         `json:"average_fps"`
-		Delay       int         `json:"delay"`
+		Viewers     json.Number         `json:"viewers"`
+		VideoHeight json.Number         `json:"video_height"`
+		AverageFps  json.Number     `json:"average_fps"`
+		Delay       json.Number         `json:"delay"`
 		CreatedAt   time.Time   `json:"created_at"`
 		IsPlaylist  bool        `json:"is_playlist"`
 		Preview     struct {
