@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "1", "0", "d"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "1", "s"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
 var waitingChannel = make(chan struct{})
