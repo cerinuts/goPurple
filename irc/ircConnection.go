@@ -101,11 +101,6 @@ func (ircConn *IrcConnection) Send(line, channel string) {
 	go ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
 
-func (ircConn *IrcConnection) SendBlocking(line, channel string) {
-	ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
-	time.Sleep(1 * time.Second)
-}
-
 func (ircConn *IrcConnection) Join(channel string) {
 	ircConn.JoinedChannels = append(ircConn.JoinedChannels, channel)
 	go ircConn.joinInternal("JOIN #" + channel)
