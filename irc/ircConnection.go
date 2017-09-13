@@ -97,6 +97,10 @@ func (ircConn *IrcConnection) Wait() {
 	<-waitingChannel
 }
 
+func (ircConn *IrcConnection) WaitForQueue() {
+	ircConn.privmsgLimiter.WaitForQueue()
+}
+
 func (ircConn *IrcConnection) Send(line, channel string) {
 	go ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
