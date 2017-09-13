@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "1", "s"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "1", "b"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
-var waitingChannel = make(chan struct{})
+var waitingChannel = make(chan int)
 var archiumCore = archium.ArchiumCore
 
 var ArchiumPrefix = "twitch.irc."
@@ -22,7 +22,10 @@ type IrcConnection struct {
 	oauth, Username, Host, Port string
 	JoinedChannels              []string
 	currentReconnectAttempts    int
-	closed 						bool
+	closed                      bool
+	ModOnly                     bool
+	privmsgLimiter              *network.Ratelimiter
+	joinLimiter                 *network.Ratelimiter
 }
 
 func (ircConn *IrcConnection) Connect(ip, port string) error {
@@ -31,7 +34,7 @@ func (ircConn *IrcConnection) Connect(ip, port string) error {
 	ircConn.Port = port
 	ircConn.client = cli
 	err := ircConn.client.Connect(ip, port)
-	if err == nil{
+	if err == nil {
 		ircConn.closed = false
 	}
 	return err
@@ -45,10 +48,20 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 	archiumCore.Register(til)
 	ircConn.oauth = oauth
 	ircConn.Username = nick
+	ircConn.privmsgLimiter = new(network.Ratelimiter)
+	if ircConn.ModOnly {
+		ircConn.privmsgLimiter.Init("twitchirc", 100, 30*time.Second)
+	} else {
+		ircConn.privmsgLimiter.Init("twitchirc", 1, 1500*time.Millisecond)
+	}
+	ircConn.joinLimiter = new(network.Ratelimiter)
+	ircConn.joinLimiter.Init("twitchirc-join", 50, 15*time.Second)
 	ircConn.Sendln("PASS " + oauth)
 	ircConn.Sendln("NICK " + nick)
 	ircConn.Sendln("CAP REQ :twitch.tv/tags")
 	ircConn.Sendln("CAP REQ :twitch.tv/commands")
+	ircConn.currentReconnectAttempts = 0
+	time.Sleep(3 * time.Second)
 	go ircConn.start()
 }
 
@@ -56,12 +69,11 @@ func (ircConn *IrcConnection) start() {
 	for {
 		line, err := ircConn.client.Recv()
 		if err != nil {
-			if ircConn.closed{
+			if ircConn.closed {
 				return
 			}
 			log.E("Error occured", err.Error())
 			ircConn.Reconnect()
-			//			waitingChannel <- struct{}{}
 			return
 		}
 		result := Parse(line)
@@ -73,26 +85,25 @@ func (ircConn *IrcConnection) start() {
 			archiumCore.FireEvent(*ev)
 		}
 	}
-	waitingChannel <- struct{}{}
+	waitingChannel <- 1
 }
 
 func (ircConn *IrcConnection) Sendln(line string) {
-	log.D("SENT", line)
-	ircConn.client.Sendln(line)
+	go ircConn.sendlnInternal(line)
 }
 
 func (ircConn *IrcConnection) Wait() {
+	ircConn.privmsgLimiter.WaitForQueue()
 	<-waitingChannel
 }
 
 func (ircConn *IrcConnection) Send(line, channel string) {
-	log.D("SENT", "PRIVMSG #" + channel + " :" + line)
-	ircConn.client.Sendln("PRIVMSG #" + channel + " :" + line)
+	go ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
 
 func (ircConn *IrcConnection) Join(channel string) {
 	ircConn.JoinedChannels = append(ircConn.JoinedChannels, channel)
-	ircConn.client.Sendln("JOIN #" + channel)
+	go ircConn.joinInternal("JOIN #" + channel)
 }
 
 func (ircConn *IrcConnection) Leave(channel string) {
@@ -102,13 +113,30 @@ func (ircConn *IrcConnection) Leave(channel string) {
 			break
 		}
 	}
-	ircConn.client.Sendln("PART #" + channel)
+	go ircConn.sendlnInternal("PART #" + channel)
 }
 
 func (ircConn *IrcConnection) Quit() {
 	ircConn.closed = true
-	ircConn.client.Sendln("QUIT")
+	ircConn.sendlnInternal("QUIT")
 	ircConn.client.Close()
+}
+
+func (ircConn *IrcConnection) sendlnInternal(line string) {
+	log.D("SENT", line)
+	ircConn.client.Sendln(line)
+}
+
+func (ircConn *IrcConnection) sendInternal(line string) {
+	log.D("SENT", line)
+	ircConn.privmsgLimiter.Request()
+	ircConn.client.Sendln(line)
+}
+
+func (ircConn *IrcConnection) joinInternal(line string) {
+	log.D("SENT", line)
+	ircConn.joinLimiter.Request()
+	ircConn.client.Sendln(line)
 }
 
 func (ircConn *IrcConnection) Reconnect() {
@@ -117,9 +145,12 @@ func (ircConn *IrcConnection) Reconnect() {
 		log.F("11 attempts to reconnect failed, giving up.")
 		return
 	}
-	ircConn.currentReconnectAttempts++
 	log.I("Trying to recover, attempt:", ircConn.currentReconnectAttempts)
 	time.Sleep(time.Duration(ircConn.currentReconnectAttempts*10) * time.Second)
+	ircConn.currentReconnectAttempts++
 	ircConn.Connect(ircConn.Host, ircConn.Port)
 	ircConn.Init(ircConn.oauth, ircConn.Username)
+	for _, channel := range ircConn.JoinedChannels {
+		ircConn.Join(channel)
+	}
 }

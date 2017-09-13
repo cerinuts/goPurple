@@ -10,7 +10,7 @@ type Video struct {
 	BroadcastID   json.Number `json:"broadcast_id"`
 	BroadcastType string      `json:"broadcast_type"`
 	Channel       struct {
-		ID          string `json:"_id"`
+		ID          json.Number `json:"_id"`
 		DisplayName string `json:"display_name"`
 		Name        string `json:"name"`
 	} `json:"channel"`

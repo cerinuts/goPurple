@@ -222,7 +222,7 @@ func (tk *TwitchKraken) GetChannelVideos(channelId, optLimit, optOffset, optBroa
 		optOffset = "0"
 	}
 
-	if optSort == "time" {
+	if optSort == "" {
 		optSort = "time"
 	}
 
