@@ -105,6 +105,10 @@ func (ircConn *IrcConnection) Send(line, channel string) {
 	go ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
 
+func (ircConn *IrcConnection) BlockingSend(line, channel string) {
+	ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
+}
+
 func (ircConn *IrcConnection) Join(channel string) {
 	ircConn.JoinedChannels = append(ircConn.JoinedChannels, channel)
 	go ircConn.joinInternal("JOIN #" + channel)
@@ -127,20 +131,20 @@ func (ircConn *IrcConnection) Quit() {
 }
 
 func (ircConn *IrcConnection) sendlnInternal(line string) {
-	log.D("SENT", line)
 	ircConn.client.Sendln(line)
+	log.D("SENT", line)
 }
 
 func (ircConn *IrcConnection) sendInternal(line string) {
-	log.D("SENT", line)
-	ircConn.privmsgLimiter.Request()
+	<-ircConn.privmsgLimiter.Request(false)
 	ircConn.client.Sendln(line)
+	log.D("SENT", line)
 }
 
 func (ircConn *IrcConnection) joinInternal(line string) {
-	log.D("SENT", line)
-	ircConn.joinLimiter.Request()
+	<-ircConn.joinLimiter.Request(false)
 	ircConn.client.Sendln(line)
+	log.D("SENT", line)
 }
 
 func (ircConn *IrcConnection) Reconnect() {
