@@ -16,7 +16,6 @@ func (til *TwitchIRCListener) Trigger(ae archium.ArchiumEvent){
 	msg := ae.Data[til.ArchiumDataIdentifier].(*IrcMessage)
 	if(msg.Command == "PING"){
 		(*(til.IrcConn)).Sendln("PONG " + msg.Msg)
-		log.I("PONG" + msg.Msg)
 	}
 	if(msg.Command == "RECONNECT"){
 		(*(til.IrcConn)).Reconnect()
