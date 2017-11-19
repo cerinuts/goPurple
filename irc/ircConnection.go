@@ -1,14 +1,14 @@
 package irc
 
 import (
-	"github.com/ceriath/goBlue/archium"
-	"github.com/ceriath/goBlue/log"
-	"github.com/ceriath/goBlue/network"
+	"gitlab.ceriath.net/libs/goBlue/archium"
+	"gitlab.ceriath.net/libs/goBlue/log"
+	"gitlab.ceriath.net/libs/goBlue/network"
 	"strings"
 	"time"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "1", "b"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "2", "b"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
 var waitingChannel = make(chan int)

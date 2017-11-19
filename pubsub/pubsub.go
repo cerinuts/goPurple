@@ -2,9 +2,9 @@ package pubsub
 
 import (
 	"encoding/json"
-	"github.com/ceriath/goBlue/archium"
-	"github.com/ceriath/goBlue/log"
-	"github.com/ceriath/goBlue/util"
+	"gitlab.ceriath.net/libs/goBlue/archium"
+	"gitlab.ceriath.net/libs/goBlue/log"
+	"gitlab.ceriath.net/libs/goBlue/util"
 	"golang.org/x/net/websocket"
 	"time"
 )

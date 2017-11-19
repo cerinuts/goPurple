@@ -2,7 +2,7 @@ package twitchapi
 
 import (
 	"encoding/json"
-	"github.com/ceriath/goBlue/network"
+	"gitlab.ceriath.net/libs/goBlue/network"
 	"strings"
 	"time"
 )

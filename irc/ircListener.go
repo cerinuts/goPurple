@@ -1,8 +1,8 @@
 package irc
 
 import (
-	"github.com/ceriath/goBlue/archium"
-	"github.com/ceriath/goBlue/log"
+	"gitlab.ceriath.net/libs/goBlue/archium"
+	"gitlab.ceriath.net/libs/goBlue/log"
 )
 
 

@@ -1,7 +1,7 @@
 package twitchapi
 
 import (
-	"github.com/ceriath/goBlue/network"
+	"gitlab.ceriath.net/libs/goBlue/network"
 	"time"
 )
 
