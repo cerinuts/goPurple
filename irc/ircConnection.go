@@ -133,7 +133,7 @@ func (ircConn *IrcConnection) sendlnInternal(line string) {
 }
 
 func (ircConn *IrcConnection) sendInternal(line string) {
-	<-ircConn.privmsgLimiter.Request(false)
+	//<-ircConn.privmsgLimiter.Request(false)
 	ircConn.client.Sendln(line)
 	log.D("SENT", line)
 }
@@ -145,7 +145,6 @@ func (ircConn *IrcConnection) joinInternal(line string) {
 }
 
 func (ircConn *IrcConnection) Reconnect() {
-	//	ircConn.client.Close()
 	if ircConn.currentReconnectAttempts >= 11 {
 		log.F("11 attempts to reconnect failed, giving up.")
 		return
