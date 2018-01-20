@@ -64,3 +64,38 @@ func (tk *TwitchKraken) IsUserFollowingChannel(userId, channelId string) (resp *
 	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/users/"+userId+"/follows/channels/"+channelId, hMap, &resp)
 	return
 }
+
+type Badge struct {
+	ID      string `json:"id"`
+	Version string `json:"version"`
+}
+
+type ChatterInfo struct {
+	ID            string  `json:"_id"`
+	Login         string  `json:"login"`
+	DisplayName   string  `json:"display_name"`
+	Color         string  `json:"color"`
+	IsVerifiedBot bool    `json:"is_verified_bot"`
+	IsKnownBot    bool    `json:"is_known_bot"`
+	Badges        []Badge `json:"badges"`
+}
+
+func (htk *HiddenKraken) GetChatInformationForUser(userId string) (resp *ChatterInfo, jsoerr *network.JsonError, err error) {
+	resp = new(ChatterInfo)
+	jac := new(network.JsonApiClient)
+	hMap := make(map[string]string)
+	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
+	hMap["Client-ID"] = htk.Tk.ClientID
+	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/users/"+userId+"/chat", hMap, &resp)
+	return
+}
+
+func (htk *HiddenKraken) GetChatInformationForUserByChannel(userId, channelId string) (resp *ChatterInfo, jsoerr *network.JsonError, err error) {
+	resp = new(ChatterInfo)
+	jac := new(network.JsonApiClient)
+	hMap := make(map[string]string)
+	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
+	hMap["Client-ID"] = htk.Tk.ClientID
+	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/users/"+userId+"/chat/channels/"+channelId, hMap, &resp)
+	return
+}
