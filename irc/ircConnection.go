@@ -1,11 +1,12 @@
 package irc
 
 import (
+	"strings"
+	"time"
+
 	"gitlab.ceriath.net/libs/goBlue/archium"
 	"gitlab.ceriath.net/libs/goBlue/log"
 	"gitlab.ceriath.net/libs/goBlue/network"
-	"strings"
-	"time"
 )
 
 const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "2", "b"
@@ -13,6 +14,7 @@ const FullVersion string = AppName + VersionMajor + "." + VersionMinor + Version
 
 var waitingChannel = make(chan int)
 var archiumCore = archium.ArchiumCore
+var openQueries = 0
 
 var ArchiumPrefix = "twitch.irc."
 var ArchiumDataIdentifier = "Message"
@@ -24,8 +26,8 @@ type IrcConnection struct {
 	currentReconnectAttempts    int
 	closed                      bool
 	ModOnly                     bool
-	privmsgLimiter              *network.Ratelimiter
-	joinLimiter                 *network.Ratelimiter
+	privmsgLimiter              *network.Tokenbucket
+	joinLimiter                 *network.Tokenbucket
 }
 
 func (ircConn *IrcConnection) Connect(ip, port string) error {
@@ -49,18 +51,15 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 	ircConn.JoinedChannels = make(map[string]struct{})
 	ircConn.oauth = oauth
 	ircConn.Username = nick
-	ircConn.privmsgLimiter = new(network.Ratelimiter)
 	if ircConn.ModOnly {
-		ircConn.privmsgLimiter.Init("twitchirc", 100, 30*time.Second)
+		ircConn.privmsgLimiter = network.NewTokenbucket(30*time.Second, 100)
 	} else {
-		ircConn.privmsgLimiter.Init("twitchirc", 1, 1500*time.Millisecond)
+		ircConn.privmsgLimiter = network.NewTokenbucket(30*time.Second, 20)
 	}
-	ircConn.joinLimiter = new(network.Ratelimiter)
-	ircConn.joinLimiter.Init("twitchirc-join", 50, 15*time.Second)
+	ircConn.joinLimiter = network.NewTokenbucket(15*time.Second, 50)
 	ircConn.Sendln("PASS " + oauth)
 	ircConn.Sendln("NICK " + nick)
 	ircConn.Sendln("CAP REQ :twitch.tv/tags twitch.tv/commands")
-
 
 	ircConn.currentReconnectAttempts = 0
 	time.Sleep(3 * time.Second)
@@ -95,12 +94,14 @@ func (ircConn *IrcConnection) Sendln(line string) {
 }
 
 func (ircConn *IrcConnection) Wait() {
-	ircConn.privmsgLimiter.WaitForQueue()
+	for openQueries > 0 {
+	}
 	<-waitingChannel
 }
 
 func (ircConn *IrcConnection) WaitForQueue() {
-	ircConn.privmsgLimiter.WaitForQueue()
+	for openQueries > 0 {
+	}
 }
 
 func (ircConn *IrcConnection) Send(line, channel string) {
@@ -133,13 +134,24 @@ func (ircConn *IrcConnection) sendlnInternal(line string) {
 }
 
 func (ircConn *IrcConnection) sendInternal(line string) {
-	//<-ircConn.privmsgLimiter.Request(false)
+	openQueries++
+	err := ircConn.privmsgLimiter.Wait()
+	if err != nil {
+		ircConn.sendInternal(line)
+		return
+	}
+	openQueries--
+
 	ircConn.client.Sendln(line)
 	log.D("SENT", line)
 }
 
 func (ircConn *IrcConnection) joinInternal(line string) {
-	<-ircConn.joinLimiter.Request(false)
+	err := ircConn.joinLimiter.Wait()
+	if err != nil {
+		ircConn.joinInternal(line)
+		return
+	}
 	ircConn.client.Sendln(line)
 	log.D("SENT", line)
 }
@@ -155,7 +167,7 @@ func (ircConn *IrcConnection) Reconnect() {
 	ircConn.currentReconnectAttempts++
 	ircConn.Connect(ircConn.Host, ircConn.Port)
 	ircConn.Init(ircConn.oauth, ircConn.Username)
-	for k, _ := range  tmpJoinedChannels{
+	for k, _ := range tmpJoinedChannels {
 		ircConn.Join(k)
 	}
 }
