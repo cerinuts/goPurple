@@ -9,7 +9,7 @@ import (
 	"gitlab.ceriath.net/libs/goBlue/network"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "2", "b"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "3", "b"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
 var waitingChannel = make(chan int)
