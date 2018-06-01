@@ -30,6 +30,10 @@ func Parse(line string) *IrcMessage {
 		msg.Command = "PING"
 		msg.Channel = globalChannel
 		msg.Source = strings.SplitN(line, ":", 2)[1]
+	} else if strings.HasPrefix(line, "PONG") {
+		msg.Command = "PONG"
+		msg.Channel = globalChannel
+		msg.Source = strings.SplitN(line, ":", 2)[1]
 	}
 	return msg
 }
@@ -92,7 +96,7 @@ func parse(line string, msg *IrcMessage) *IrcMessage {
 			msg.Msg = strings.SplitN(split[2], ":", 2)[1]
 		}
 	case "HOSTTARGET":
-	fallthrough
+		fallthrough
 	case "MODE":
 		s := strings.SplitN(split[2], " ", 2)
 		msg.Channel = s[0][1:]

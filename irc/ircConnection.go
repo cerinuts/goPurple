@@ -14,7 +14,7 @@ const FullVersion string = AppName + VersionMajor + "." + VersionMinor + Version
 
 var waitingChannel = make(chan int)
 var archiumCore = archium.ArchiumCore
-var openQueries = 0
+var runningKeepalive = false
 
 var ArchiumPrefix = "twitch.irc."
 var ArchiumDataIdentifier = "Message"
@@ -28,6 +28,9 @@ type IrcConnection struct {
 	ModOnly                     bool
 	privmsgLimiter              *network.Tokenbucket
 	joinLimiter                 *network.Tokenbucket
+	runningReconnect            bool
+	openQueries                 int
+	lastActivity                time.Time
 }
 
 func (ircConn *IrcConnection) Connect(ip, port string) error {
@@ -35,6 +38,7 @@ func (ircConn *IrcConnection) Connect(ip, port string) error {
 	ircConn.Host = ip
 	ircConn.Port = port
 	ircConn.client = cli
+	ircConn.openQueries = 0
 	err := ircConn.client.Connect(ip, port)
 	if err == nil {
 		ircConn.closed = false
@@ -57,13 +61,18 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 		ircConn.privmsgLimiter = network.NewTokenbucket(30*time.Second, 20)
 	}
 	ircConn.joinLimiter = network.NewTokenbucket(15*time.Second, 50)
-	ircConn.Sendln("PASS " + oauth)
+	ircConn.lastActivity = time.Now()
+	if !strings.HasPrefix(nick, "justinfan") {
+		ircConn.Sendln("PASS " + oauth)
+	}
 	ircConn.Sendln("NICK " + nick)
 	ircConn.Sendln("CAP REQ :twitch.tv/tags twitch.tv/commands")
 
-	ircConn.currentReconnectAttempts = 0
 	time.Sleep(3 * time.Second)
+
+	(*(til.IrcConn)).runningReconnect = false
 	go ircConn.start()
+	go Keepalive(ircConn)
 }
 
 func (ircConn *IrcConnection) start() {
@@ -77,6 +86,7 @@ func (ircConn *IrcConnection) start() {
 			ircConn.Reconnect()
 			return
 		}
+
 		result := Parse(line)
 		if result != nil {
 			ev := archium.CreateEvent()
@@ -89,18 +99,35 @@ func (ircConn *IrcConnection) start() {
 	waitingChannel <- 1
 }
 
+func Keepalive(ircConn *IrcConnection) {
+	if runningKeepalive {
+		return
+	}
+	runningKeepalive = true
+	for {
+		if time.Since(ircConn.lastActivity) >= 10*time.Second {
+			ircConn.Sendln("PING")
+			time.Sleep(5 * time.Second)
+			if time.Since(ircConn.lastActivity) >= 15*time.Second {
+				ircConn.Reconnect()
+				return
+			}
+		}
+	}
+}
+
 func (ircConn *IrcConnection) Sendln(line string) {
 	go ircConn.sendlnInternal(line)
 }
 
 func (ircConn *IrcConnection) Wait() {
-	for openQueries > 0 {
+	for ircConn.openQueries > 0 {
 	}
 	<-waitingChannel
 }
 
 func (ircConn *IrcConnection) WaitForQueue() {
-	for openQueries > 0 {
+	for ircConn.openQueries > 0 {
 	}
 }
 
@@ -134,13 +161,13 @@ func (ircConn *IrcConnection) sendlnInternal(line string) {
 }
 
 func (ircConn *IrcConnection) sendInternal(line string) {
-	openQueries++
+	ircConn.openQueries++
 	err := ircConn.privmsgLimiter.Wait()
 	if err != nil {
 		ircConn.sendInternal(line)
 		return
 	}
-	openQueries--
+	ircConn.openQueries--
 
 	ircConn.client.Sendln(line)
 	log.D("SENT", line)
@@ -157,6 +184,10 @@ func (ircConn *IrcConnection) joinInternal(line string) {
 }
 
 func (ircConn *IrcConnection) Reconnect() {
+	if ircConn.runningReconnect {
+		return
+	}
+	ircConn.runningReconnect = true
 	if ircConn.currentReconnectAttempts >= 11 {
 		log.F("11 attempts to reconnect failed, giving up.")
 		return
