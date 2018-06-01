@@ -72,7 +72,7 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 
 	(*(til.IrcConn)).runningReconnect = false
 	go ircConn.start()
-	go Keepalive(ircConn)
+	go keepalive(ircConn)
 }
 
 func (ircConn *IrcConnection) start() {
@@ -99,7 +99,7 @@ func (ircConn *IrcConnection) start() {
 	waitingChannel <- 1
 }
 
-func Keepalive(ircConn *IrcConnection) {
+func keepalive(ircConn *IrcConnection) {
 	if runningKeepalive {
 		return
 	}
