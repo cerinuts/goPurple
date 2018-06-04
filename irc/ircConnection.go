@@ -113,6 +113,7 @@ func keepalive(ircConn *IrcConnection) {
 				return
 			}
 		}
+		time.Sleep(5 * time.Second)
 	}
 }
 
