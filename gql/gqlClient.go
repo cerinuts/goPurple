@@ -12,6 +12,9 @@ import (
 	"gitlab.ceriath.net/libs/goBlue/log"
 )
 
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/gql", "0", "1", "s"
+const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
+
 const GQLURL = "https://gql.twitch.tv/gql"
 
 type GQLClient struct {

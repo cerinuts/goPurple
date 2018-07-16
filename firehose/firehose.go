@@ -8,6 +8,9 @@ import (
 	"gitlab.ceriath.net/libs/goBlue/network"
 )
 
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/firehose", "0", "1", "s"
+const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
+
 type Firehose struct {
 	client   *network.EventsourceClient
 	msgQueue chan FirehoseMessage
