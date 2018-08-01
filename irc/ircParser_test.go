@@ -1,3 +1,8 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
 package irc
 
 import (
@@ -60,7 +65,7 @@ func TestRegex(t *testing.T) {
 	//host
 	in34 := ":tmi.twitch.tv HOSTTARGET #hosting_channel <channel> [<number-of-viewers>]"
 	//unhost
-in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
+	in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
 	//notice
 	in36 := "@msg-id=slow_off :tmi.twitch.tv NOTICE #dallas :This room is no longer in slow mode."
 	//Reconnect
@@ -71,7 +76,6 @@ in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
 	in39 := ":tmi.twitch.tv USERNOTICE #<channel> :<message>"
 	//sub withouth message
 	in40 := "@badges=<badges>;color=<color>;display-name=<display-name>;emotes=<emotes>;mod=<mod>;msg-id=<msg-id>;msg-param-months=<msg-param-months>;msg-param-sub-plan=<msg-param-sub-plan>;msg-param-sub-plan-name=<msg-param-sub-plan-name>;room-id=<room-id>;subscriber=<subscriber>;system-msg=<system-msg>;login=<user>;turbo=<turbo>;user-id=<user-id>;user-type=<user-type> :tmi.twitch.tv USERNOTICE #<channel>"
-	
 
 	println("---1---")
 	tparse(in1)
@@ -155,9 +159,9 @@ in35 := ":tmi.twitch.tv HOSTTARGET #hosting_channel :- [<number-of-viewers>]"
 	tparse(in40)
 	println("---end---")
 
-//	for i := 0; i < 1000000; i++{
-//		tparse(in27)
-//	}
+	//	for i := 0; i < 1000000; i++{
+	//		tparse(in27)
+	//	}
 }
 
 func tparse(line string) {
@@ -179,5 +183,5 @@ func tparse(line string) {
 	//		println("err")
 	//	}
 	msg := Parse(line)
-		println(msg.Command, msg.Source, msg.Channel, msg.Msg)
+	println(msg.Command, msg.Source, msg.Channel, msg.Msg)
 }

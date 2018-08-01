@@ -1,19 +1,34 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package pubsub is used for twitch's pubsub. This implementation is not tested at all.
 package pubsub
 
 import (
 	"encoding/json"
-	"gitlab.ceriath.net/libs/goBlue/archium"
-	"gitlab.ceriath.net/libs/goBlue/log"
-	"gitlab.ceriath.net/libs/goBlue/util"
-	"golang.org/x/net/websocket"
 	"time"
+
+	"code.cerinuts.io/libs/goBlue/archium"
+	"code.cerinuts.io/libs/goBlue/log"
+	"code.cerinuts.io/libs/goBlue/util"
+	"golang.org/x/net/websocket"
 )
 
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/pubsub", "0", "1", "d"
+const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
+
+//ArchiumPrefix for twitch pubsub messages
 var ArchiumPrefix = "twitch.pubsub."
+
+//ArchiumDataIdentifier which contains the actual payload
 var ArchiumDataIdentifier = "Message"
 
+//Pubsub is a simple container for the pubsub
 type Pubsub struct {
-	Url string
+	URL string
 	ws  *websocket.Conn
 }
 
@@ -26,19 +41,21 @@ type psListen struct {
 	} `json:"data"`
 }
 
+//PsResult is the message sent by pubsub
 type PsResult struct {
 	Type  string `json:"type"`
 	Nonce string `json:"nonce"`
 	Error string `json:"error"`
 	Data  struct {
-		Topic   string                 `json:"topic"`
-		RawMessage string `json:"message"`
-		Message map[string]interface{} `json:"-"`
+		Topic      string                 `json:"topic"`
+		RawMessage string                 `json:"message"`
+		Message    map[string]interface{} `json:"-"`
 	} `json:"data"`
 }
 
+//Connect connects to a pubsub
 func (ps *Pubsub) Connect() {
-	ws, err := websocket.Dial(ps.Url, "", "http://localhost/")
+	ws, err := websocket.Dial(ps.URL, "", "http://localhost/")
 	if err != nil {
 		log.F(err)
 	}
@@ -51,9 +68,10 @@ func (ps *Pubsub) Connect() {
 	}()
 }
 
-func (ps *Pubsub) Wait() {
+//Recv waits for incoming messages
+func (ps *Pubsub) Recv() {
 	for {
-		err, msg := ps.recv()
+		msg, err := ps.recv()
 		if err != nil {
 			log.E(err)
 			if err.Error() == "EOF" {
@@ -65,6 +83,7 @@ func (ps *Pubsub) Wait() {
 	}
 }
 
+//Listen subscribes to a list of topics
 func (ps *Pubsub) Listen(topics []string, token string) {
 	ls := new(psListen)
 	ls.Type = "LISTEN"
@@ -84,24 +103,31 @@ func (ps *Pubsub) Listen(topics []string, token string) {
 func (ps *Pubsub) ping() {
 	ping := make(map[string]string)
 	ping["type"] = "PING"
-	data, _ := json.Marshal(ping)
+	data, err := json.Marshal(ping)
+	if err != nil {
+		return
+	}
 	ps.ws.Write(data)
 }
 
-func (ps *Pubsub) recv() (error, []byte) {
+func (ps *Pubsub) recv() ([]byte, error) {
 	var msg = make([]byte, 2048)
 	var n int
 	n, err := ps.ws.Read(msg)
 	if err != nil {
 		log.E(err)
-		return err, nil
+		return nil, err
 	}
-	return nil, msg[:n]
+	return msg[:n], nil
 }
 
 func (ps *Pubsub) parse(msg []byte) {
 	psR := new(PsResult)
-	json.Unmarshal(msg, psR)
+	err := json.Unmarshal(msg, psR)
+	if err != nil {
+		log.E(err)
+		return
+	}
 	switch psR.Type {
 	case "PONG":
 		return
@@ -127,6 +153,7 @@ func (ps *Pubsub) parse(msg []byte) {
 
 }
 
+//Close closes the connection
 func (ps *Pubsub) Close() {
 	ps.ws.Close()
 }

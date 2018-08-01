@@ -1,3 +1,10 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package twitchapi is used for twitch's API
 package twitchapi
 
 import (
@@ -5,14 +12,15 @@ import (
 	"time"
 )
 
+//Video contains information about a video
 type Video struct {
 	ID            json.Number `json:"_id"`
 	BroadcastID   json.Number `json:"broadcast_id"`
 	BroadcastType string      `json:"broadcast_type"`
 	Channel       struct {
 		ID          json.Number `json:"_id"`
-		DisplayName string `json:"display_name"`
-		Name        string `json:"name"`
+		DisplayName string      `json:"display_name"`
+		Name        string      `json:"name"`
 	} `json:"channel"`
 	CreatedAt       time.Time `json:"created_at"`
 	Description     string    `json:"description"`
@@ -68,8 +76,8 @@ type Video struct {
 	Views      int         `json:"views"`
 }
 
+//Videos contains a list of videos
 type Videos struct {
 	Total  int     `json:"_total"`
 	Videos []Video `json:"videos"`
 }
-

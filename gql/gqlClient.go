@@ -1,3 +1,10 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package gql is used for twitch's GraphQL
 package gql
 
 import (
@@ -9,19 +16,21 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.ceriath.net/libs/goBlue/log"
+	"code.cerinuts.io/libs/goBlue/log"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/gql", "0", "1", "s"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/gql", "0", "2", "s"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
-const GQLURL = "https://gql.twitch.tv/gql"
+const gqlURL = "https://gql.twitch.tv/gql"
 
-type GQLClient struct {
-	ClientId string
+//Client is a client for twitch's gql
+type Client struct {
+	ClientID string
 	OAuth    string
 }
 
+//CreateVideoBookmarkInputResponse is the response sent by gql for creating video bookmarks
 type CreateVideoBookmarkInputResponse struct {
 	Data struct {
 		CreateVideoBookmark struct {
@@ -36,13 +45,14 @@ type CreateVideoBookmarkInputResponse struct {
 	} `json:"extensions"`
 }
 
-func (gqlc *GQLClient) CreateVideoBookmarkInput(description, streamId string) (response *CreateVideoBookmarkInputResponse, err error) {
+//CreateVideoBookmarkInput creates a video bookmark (marker)
+func (gqlc *Client) CreateVideoBookmarkInput(description, streamID string) (response *CreateVideoBookmarkInputResponse, err error) {
 
 	body := `{
 		"query": "mutation($input: CreateVideoBookmarkInput!) {\n\tcreateVideoBookmark(input: $input) {\n\t\terror {\n\t\t\tcode\n\t\t}\n\t\tvideoBookmark {\n\t\t\tpositionSeconds\n\t\t}\n\t}\n}",
 		"variables": {
 			"input": {
-				"broadcastID": "` + streamId + `",
+				"broadcastID": "` + streamID + `",
 				"description": "` + description + `",
 				"medium": "chat",
 				"platform": "web"
@@ -53,13 +63,13 @@ func (gqlc *GQLClient) CreateVideoBookmarkInput(description, streamId string) (r
 	log.D(body)
 
 	header := make(map[string]string)
-	header["Client-ID"] = gqlc.ClientId
+	header["Client-ID"] = gqlc.ClientID
 	header["Authorization"] = "OAuth " + gqlc.OAuth
 	header["Content-Type"] = "application/json"
 
 	response = new(CreateVideoBookmarkInputResponse)
 
-	req, err := http.NewRequest(http.MethodPost, GQLURL, bytes.NewBuffer([]byte(body)))
+	req, err := http.NewRequest(http.MethodPost, gqlURL, bytes.NewBuffer([]byte(body)))
 	if err != nil {
 		log.E(err)
 		return nil, err
@@ -98,7 +108,7 @@ func runRequest(req *http.Request, header map[string]string, response interface{
 
 	if res.StatusCode == 200 {
 		return json.Unmarshal(body, &response)
-	} else {
-		return errors.New(strconv.Itoa(res.StatusCode))
 	}
+	return errors.New(strconv.Itoa(res.StatusCode))
+
 }

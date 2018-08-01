@@ -1,18 +1,27 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package irc is used for twitch's irc
 package irc
 
 import (
 	"strings"
 )
 
-type IrcMessage struct {
+//Message contains an irc message
+type Message struct {
 	Tags                               map[string]string
 	Raw, Channel, Msg, Command, Source string
 }
 
-var globalChannel string = "global"
+const globalChannel = "global"
 
-func Parse(line string) *IrcMessage {
-	msg := new(IrcMessage)
+//Parse parses an irc message
+func Parse(line string) *Message {
+	msg := new(Message)
 	msg.Raw = line
 	if line[0] == '@' {
 		line = line[1:]
@@ -38,7 +47,7 @@ func Parse(line string) *IrcMessage {
 	return msg
 }
 
-func parse(line string, msg *IrcMessage) *IrcMessage {
+func parse(line string, msg *Message) *Message {
 	split := strings.SplitN(line[1:], " ", 3)
 	msg.Source = split[0]
 	msg.Command = split[1]

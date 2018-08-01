@@ -1,22 +1,32 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package firehose is used for twitch's firehose
 package firehose
 
 import (
 	"encoding/json"
 	"strings"
 
-	"gitlab.ceriath.net/libs/goBlue/log"
-	"gitlab.ceriath.net/libs/goBlue/network"
+	"code.cerinuts.io/libs/goBlue/log"
+	"code.cerinuts.io/libs/goBlue/network"
 )
 
 const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/firehose", "0", "1", "s"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
+const firehoseURL = "https://tmi.twitch.tv/firehose?oauth_token="
+
+//Firehose offers an interface to twitch tmi's firehose. Use with caution.
 type Firehose struct {
 	client   *network.EventsourceClient
-	msgQueue chan FirehoseMessage
+	msgQueue chan Message
 }
 
-type internalFirehoseMessage struct {
+type internalMessage struct {
 	Command string `json:"command"`
 	Room    string `json:"room"`
 	Nick    string `json:"nick"`
@@ -25,7 +35,8 @@ type internalFirehoseMessage struct {
 	Tags    string `json:"tags"`
 }
 
-type FirehoseMessage struct {
+//Message is the Firehose version of an IRC message
+type Message struct {
 	Command string            `json:"command"`
 	Room    string            `json:"room"`
 	Nick    string            `json:"nick"`
@@ -35,18 +46,20 @@ type FirehoseMessage struct {
 	Raw     string
 }
 
-func (f *Firehose) Connect(token string) (messageQueue chan FirehoseMessage, err error) {
+//Connect to Firehose with given OAuth token
+func (f *Firehose) Connect(token string) (messageQueue chan Message, err error) {
 	f.client = new(network.EventsourceClient)
-	_, err = f.client.Subscribe("https://tmi.twitch.tv/firehose?oauth_token=" + token)
+	_, err = f.client.Subscribe(firehoseURL + token)
 	if err != nil {
 		return nil, err
 	}
-	f.msgQueue = make(chan FirehoseMessage)
+	f.msgQueue = make(chan Message)
 	go f.handle()
 
 	return f.msgQueue, nil
 }
 
+//Disconnect from firehose
 func (f *Firehose) Disconnect() {
 	f.client.Close()
 }
@@ -65,9 +78,9 @@ func (f *Firehose) handle() {
 	}
 }
 
-func parse(ev *network.Event) (msg *FirehoseMessage, err error) {
-	imsg := new(internalFirehoseMessage)
-	msg = new(FirehoseMessage)
+func parse(ev *network.Event) (msg *Message, err error) {
+	imsg := new(internalMessage)
+	msg = new(Message)
 	err = json.Unmarshal([]byte(ev.Payload), &imsg)
 	if err != nil {
 		return nil, err

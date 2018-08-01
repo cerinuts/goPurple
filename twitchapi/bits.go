@@ -1,10 +1,19 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package twitchapi is used for twitch's API
 package twitchapi
 
 import (
-	"gitlab.ceriath.net/libs/goBlue/network"
 	"time"
+
+	"code.cerinuts.io/libs/goBlue/network"
 )
 
+//Cheeremotes struct
 type Cheeremotes struct {
 	Actions []struct {
 		Prefix string   `json:"prefix"`
@@ -56,22 +65,24 @@ type Cheeremotes struct {
 	} `json:"actions"`
 }
 
-func (tk *TwitchKraken) GetGlobalCheeremotes() (resp *Cheeremotes, jsoerr *network.JsonError, err error) {
+//GetGlobalCheeremotes returns all cheeremotes that are accesible from every channel
+func (tk *TwitchKraken) GetGlobalCheeremotes() (resp *Cheeremotes, jsoerr *network.JSONError, err error) {
 	resp = new(Cheeremotes)
-	jac := new(network.JsonApiClient)
+	jac := new(network.JSONAPIClient)
 	hMap := make(map[string]string)
-	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
+	hMap["Accept"] = APIVersionHeader
 	hMap["Client-ID"] = tk.ClientID
-	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/bits/actions", hMap, &resp)
+	jsoerr, err = jac.Request(BaseURL+"/bits/actions", hMap, &resp)
 	return
 }
 
-func (tk *TwitchKraken) GetCheeremotesForChannel(channelId string) (resp *Cheeremotes, jsoerr *network.JsonError, err error) {
+//GetCheeremotesForChannel returns channel specific cheeremotes
+func (tk *TwitchKraken) GetCheeremotesForChannel(channelID string) (resp *Cheeremotes, jsoerr *network.JSONError, err error) {
 	resp = new(Cheeremotes)
-	jac := new(network.JsonApiClient)
+	jac := new(network.JSONAPIClient)
 	hMap := make(map[string]string)
-	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
+	hMap["Accept"] = APIVersionHeader
 	hMap["Client-ID"] = tk.ClientID
-	jsoerr, err = jac.Request("https://api.twitch.tv/kraken/bits/actions?channel="+channelId, hMap, &resp)
+	jsoerr, err = jac.Request(BaseURL+"/bits/actions?channel="+channelID, hMap, &resp)
 	return
 }

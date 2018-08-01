@@ -1,39 +1,52 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package irc is used for twitch's irc
 package irc
 
 import (
 	"strings"
 	"time"
 
-	"gitlab.ceriath.net/libs/goBlue/archium"
-	"gitlab.ceriath.net/libs/goBlue/log"
-	"gitlab.ceriath.net/libs/goBlue/network"
+	"code.cerinuts.io/libs/goBlue/archium"
+	"code.cerinuts.io/libs/goBlue/log"
+	"code.cerinuts.io/libs/goBlue/network"
+	"code.cerinuts.io/libs/goBlue/util"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "3", "b"
+const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "4", "s"
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
 var waitingChannel = make(chan int)
 var archiumCore = archium.ArchiumCore
 var runningKeepalive = false
 
+//ArchiumPrefix is the prefix used for twitch irc messages on archium
 var ArchiumPrefix = "twitch.irc."
+
+//ArchiumDataIdentifier is the identifier to find the actual irc message in the archium message
 var ArchiumDataIdentifier = "Message"
 
-type IrcConnection struct {
+//Connection holds everything required for an Irc connection to twitch
+type Connection struct {
 	client                      *network.Client
 	oauth, Username, Host, Port string
-	JoinedChannels              map[string]struct{}
+	JoinedChannels              []string
 	currentReconnectAttempts    int
+	openQueries                 int
 	closed                      bool
 	ModOnly                     bool
+	runningReconnect            bool
 	privmsgLimiter              *network.Tokenbucket
 	joinLimiter                 *network.Tokenbucket
-	runningReconnect            bool
-	openQueries                 int
 	lastActivity                time.Time
 }
 
-func (ircConn *IrcConnection) Connect(ip, port string) error {
+//Connect opens a connection to the irc server
+func (ircConn *Connection) Connect(ip, port string) error {
 	cli := new(network.Client)
 	ircConn.Host = ip
 	ircConn.Port = port
@@ -46,13 +59,14 @@ func (ircConn *IrcConnection) Connect(ip, port string) error {
 	return err
 }
 
-func (ircConn *IrcConnection) Init(oauth, nick string) {
+//Init initalizes the connection and logs in
+func (ircConn *Connection) Init(oauth, nick string) {
 	til := new(TwitchIRCListener)
 	til.ArchiumDataIdentifier = ArchiumDataIdentifier
 	til.ArchiumPrefix = ArchiumPrefix
 	til.IrcConn = ircConn
 	archiumCore.Register(til)
-	ircConn.JoinedChannels = make(map[string]struct{})
+	ircConn.JoinedChannels = make([]string, 1)
 	ircConn.oauth = oauth
 	ircConn.Username = nick
 	if ircConn.ModOnly {
@@ -75,7 +89,7 @@ func (ircConn *IrcConnection) Init(oauth, nick string) {
 	go keepalive(ircConn)
 }
 
-func (ircConn *IrcConnection) start() {
+func (ircConn *Connection) start() {
 	for {
 		line, err := ircConn.client.Recv()
 		if err != nil {
@@ -99,7 +113,7 @@ func (ircConn *IrcConnection) start() {
 	waitingChannel <- 1
 }
 
-func keepalive(ircConn *IrcConnection) {
+func keepalive(ircConn *Connection) {
 	if runningKeepalive {
 		return
 	}
@@ -117,51 +131,61 @@ func keepalive(ircConn *IrcConnection) {
 	}
 }
 
-func (ircConn *IrcConnection) Sendln(line string) {
+//Sendln sends a raw string to irc. Pls consider using Send instead expect you know what you are doing.
+func (ircConn *Connection) Sendln(line string) {
 	go ircConn.sendlnInternal(line)
 }
 
-func (ircConn *IrcConnection) Wait() {
+//Wait waits until the queue is done and a message to waitingChannel is sent, e.g. the connection is terminated
+func (ircConn *Connection) Wait() {
 	for ircConn.openQueries > 0 {
+		time.Sleep(1 * time.Millisecond)
 	}
 	<-waitingChannel
 }
 
-func (ircConn *IrcConnection) WaitForQueue() {
+//WaitForQueue waits until all queued up irc messages are sent within ratelimits
+func (ircConn *Connection) WaitForQueue() {
 	for ircConn.openQueries > 0 {
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
-func (ircConn *IrcConnection) Send(line, channel string) {
+//Send sends a message to a channel
+func (ircConn *Connection) Send(line, channel string) {
 	go ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
 
-func (ircConn *IrcConnection) BlockingSend(line, channel string) {
+//BlockingSend sends a message to a channel and blocks until its actually sent within ratelimits
+func (ircConn *Connection) BlockingSend(line, channel string) {
 	ircConn.sendInternal("PRIVMSG #" + channel + " :" + line)
 }
 
-func (ircConn *IrcConnection) Join(channel string) {
-	ircConn.JoinedChannels[channel] = struct{}{}
+//Join joins a channel
+func (ircConn *Connection) Join(channel string) {
+	ircConn.JoinedChannels = append(ircConn.JoinedChannels, channel)
 	go ircConn.joinInternal("JOIN #" + channel)
 }
 
-func (ircConn *IrcConnection) Leave(channel string) {
-	delete(ircConn.JoinedChannels, channel)
+//Leave leaves a channel
+func (ircConn *Connection) Leave(channel string) {
+	util.RemoveFromStringSlice(ircConn.JoinedChannels, channel)
 	go ircConn.sendlnInternal("PART #" + channel)
 }
 
-func (ircConn *IrcConnection) Quit() {
+//Quit closes the irc connection
+func (ircConn *Connection) Quit() {
 	ircConn.closed = true
 	ircConn.sendlnInternal("QUIT")
 	ircConn.client.Close()
 }
 
-func (ircConn *IrcConnection) sendlnInternal(line string) {
+func (ircConn *Connection) sendlnInternal(line string) {
 	ircConn.client.Sendln(line)
 	log.D("SENT", line)
 }
 
-func (ircConn *IrcConnection) sendInternal(line string) {
+func (ircConn *Connection) sendInternal(line string) {
 	ircConn.openQueries++
 	err := ircConn.privmsgLimiter.Wait()
 	if err != nil {
@@ -174,7 +198,7 @@ func (ircConn *IrcConnection) sendInternal(line string) {
 	log.D("SENT", line)
 }
 
-func (ircConn *IrcConnection) joinInternal(line string) {
+func (ircConn *Connection) joinInternal(line string) {
 	err := ircConn.joinLimiter.Wait()
 	if err != nil {
 		ircConn.joinInternal(line)
@@ -184,7 +208,8 @@ func (ircConn *IrcConnection) joinInternal(line string) {
 	log.D("SENT", line)
 }
 
-func (ircConn *IrcConnection) Reconnect() {
+//Reconnect reconnects to the irc server.
+func (ircConn *Connection) Reconnect() {
 	if ircConn.runningReconnect {
 		return
 	}
@@ -199,7 +224,7 @@ func (ircConn *IrcConnection) Reconnect() {
 	ircConn.currentReconnectAttempts++
 	ircConn.Connect(ircConn.Host, ircConn.Port)
 	ircConn.Init(ircConn.oauth, ircConn.Username)
-	for k, _ := range tmpJoinedChannels {
+	for _, k := range tmpJoinedChannels {
 		ircConn.Join(k)
 	}
 }

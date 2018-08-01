@@ -1,30 +1,40 @@
+/*
+Copyright (c) 2018 ceriath
+This Package is part of the "goPurple"-Library
+It is licensed under the MIT License
+*/
+
+//Package twitchapi is used for twitch's API
 package twitchapi
 
 import (
 	"context"
-	"gitlab.ceriath.net/libs/goBlue/network"
-	"gitlab.ceriath.net/libs/goBlue/util"
 	"net/http"
 	"strings"
 	"time"
+
+	"code.cerinuts.io/libs/goBlue/network"
+	"code.cerinuts.io/libs/goBlue/util"
 )
 
 var waitForToken chan string
 
-func (tk *TwitchKraken) GetOauthToken(forceAuth bool, callbackUrl, scopes string, callback func(token string)) (url string) {
+//GetOauthToken starts an oauth grant process by starting a callback server on the callbackURL which will receive the token
+//and returns the url which the user is required to open
+func (tk *TwitchKraken) GetOauthToken(forceAuth bool, callbackURL, scopes string, callback func(token string)) (url string) {
 	waitForToken = make(chan string, 1)
 	state := util.GetRandomAlphanumericString(10)
 
-	url = "https://api.twitch.tv/kraken/oauth2/authorize?" +
+	url = BaseURL + "/oauth2/authorize?" +
 		"response_type=token" +
 		"&client_id=" + tk.ClientID +
-		"&redirect_uri=" + callbackUrl + "/callback" +
+		"&redirect_uri=" + callbackURL + "/callback" +
 		"&scope=" + scopes +
 		"&state=" + state
-		if forceAuth {
-			url += "&force_verify=true"
-		}
-	srv := startTokenServer(callbackUrl)
+	if forceAuth {
+		url += "&force_verify=true"
+	}
+	srv := startTokenServer(callbackURL)
 	go func(srv *http.Server) {
 		result := <-waitForToken
 		srv.Shutdown(context.Background())
@@ -35,22 +45,22 @@ func (tk *TwitchKraken) GetOauthToken(forceAuth bool, callbackUrl, scopes string
 }
 
 func handleResponse(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(getHttpResponse(r.Host)))
+	w.Write([]byte(getHTTPResponse(r.Host)))
 }
 
 func handleToken(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query()["token"][0]
 	token = strings.TrimSpace(token)
 	if token == "" {
-		w.Write([]byte(getHttpResponseError()))
+		w.Write([]byte(getHTTPResponseError()))
 	} else {
-		w.Write([]byte(getHttpResponseSuccess()))
+		w.Write([]byte(getHTTPResponseSuccess()))
 	}
 	waitForToken <- token
 }
 
-func startTokenServer(callbackUrl string) *http.Server {
-	srv := &http.Server{Addr: strings.TrimPrefix(strings.TrimPrefix(callbackUrl, "http://"), "https://")}
+func startTokenServer(callbackURL string) *http.Server {
+	srv := &http.Server{Addr: strings.TrimPrefix(strings.TrimPrefix(callbackURL, "http://"), "https://")}
 
 	http.HandleFunc("/token", handleToken)
 	http.HandleFunc("/callback", handleResponse)
@@ -62,7 +72,7 @@ func startTokenServer(callbackUrl string) *http.Server {
 	return srv
 }
 
-func getHttpResponse(callbackUrl string) string {
+func getHTTPResponse(callbackURL string) string {
 	return `<!DOCTYPE html>
 			<html><head>
 			<title>OAuth Token</title>
@@ -71,7 +81,7 @@ func getHttpResponse(callbackUrl string) string {
 			
 			function initiate() {	
 				if((new URL(location)).searchParams.get("error") != null){
-					document.location.replace("http://` + callbackUrl + `/token?token=");
+					document.location.replace("http://` + callbackURL + `/token?token=");
 				}
 			
 				var hash = document.location.hash.substr(1);
@@ -92,7 +102,7 @@ func getHttpResponse(callbackUrl string) string {
 				document.getElementById("javascript").className = "";	
 
 				if(access_token != null){
-					document.location.replace("http://` + callbackUrl + `/token?token="+access_token);
+					document.location.replace("http://` + callbackURL + `/token?token="+access_token);
 				}
 			}
 				
@@ -110,7 +120,7 @@ func getHttpResponse(callbackUrl string) string {
 				</html>`
 }
 
-func getHttpResponseSuccess() string {
+func getHTTPResponseSuccess() string {
 	return `<!DOCTYPE html>
 			<html><head>
 			<title>OAuth Token</title>
@@ -127,7 +137,7 @@ func getHttpResponseSuccess() string {
 			</html>`
 }
 
-func getHttpResponseError() string {
+func getHTTPResponseError() string {
 	return `<!DOCTYPE html>
 			<html><head>
 			<title>OAuth Token</title>
@@ -143,12 +153,13 @@ func getHttpResponseError() string {
 			</html>`
 }
 
+//RevokeToken revokes a previously granted oauth token
 func (tk *TwitchKraken) RevokeToken(oauth string) {
-	jac := new(network.JsonApiClient)
-	jac.Post("https://api.twitch.tv/kraken/oauth2/revoke?client_id="+tk.ClientID+"&token="+oauth, nil, "", nil)
-	return
+	jac := new(network.JSONAPIClient)
+	jac.Post(BaseURL+"/oauth2/revoke?client_id="+tk.ClientID+"&token="+oauth, nil, "", nil)
 }
 
+//TokenValidation is the twitch api response for token validation
 type TokenValidation struct {
 	Identified bool `json:"identified"`
 	Token      struct {
@@ -173,13 +184,14 @@ type TokenValidation struct {
 	} `json:"_links"`
 }
 
-func (tk *TwitchKraken) ValidateToken(oauth string) (resp *TokenValidation, jsoerr *network.JsonError, err error) {
+//ValidateToken sends an oauth token to twitch api for validation
+func (tk *TwitchKraken) ValidateToken(oauth string) (resp *TokenValidation, jsoerr *network.JSONError, err error) {
 	resp = new(TokenValidation)
-	jac := new(network.JsonApiClient)
+	jac := new(network.JSONAPIClient)
 	hMap := make(map[string]string)
-	hMap["Accept"] = "application/vnd.twitchtv.v5+json"
+	hMap["Accept"] = APIVersionHeader
 	hMap["Client-ID"] = tk.ClientID
 	hMap["Authorization"] = "OAuth " + oauth
-	jsoerr, err = jac.Request("https://api.twitch.tv/kraken", hMap, &resp)
+	jsoerr, err = jac.Request(BaseURL, hMap, &resp)
 	return
 }
