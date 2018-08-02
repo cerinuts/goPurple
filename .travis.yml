@@ -1,4 +1,4 @@
   language: go
   go:
     - "1.10"
-  go_import_path: code.cerinuts.io/libs/goBlue
+  go_import_path: code.cerinuts.io/libs/goPurple
