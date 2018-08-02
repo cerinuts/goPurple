@@ -1,7 +1,12 @@
 # goPurple
+
+[![GoDoc](https://godoc.org/code.cerinuts.io/libs/goPurple?status.svg)](https://godoc.org/code.cerinuts.io/libs/goPurple)
+
 Development happens over at [code.cerinuts.io](https://code.cerinuts.io)
+There is also a [github mirror](https://github.com/cerinuts/goPurple)
 
-Please do NOT use the master branch, since it's likely unstable. 
-Use the [github mirror](https://github.com/cerinuts/goPurple) mirror or a stable tag (ending with s)
+The master branch contains the latest stable version. 
+However, for our applications i recommend to use the latest stable tag/release (ending with s) for this application
 
-use godoc for now
+Use [godoc](https://godoc.org/code.cerinuts.io/libs/goPurple) for now
+
