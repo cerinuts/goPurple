@@ -17,7 +17,19 @@ import (
 	"code.cerinuts.io/libs/goBlue/util"
 )
 
-const AppName, VersionMajor, VersionMinor, VersionBuild string = "goPurple/irc", "0", "4", "s"
+//AppName is the name of the application
+const AppName string = "goPurple/irc"
+
+//VersionMajor 0 means in development, >1 ensures compatibility with each minor version, but breakes with new major version
+const VersionMajor string = "0"
+
+//VersionMinor introduces changes that require a new version number. If the major version is 0, they are likely to break compatibility
+const VersionMinor string = "4"
+
+//VersionBuild is the type of this release. s(table), b(eta), d(evelopment), n(ightly)
+const VersionBuild string = "s"
+
+//FullVersion contains the full name and version of this package in a printable string
 const FullVersion string = AppName + VersionMajor + "." + VersionMinor + VersionBuild
 
 var waitingChannel = make(chan int)
@@ -59,7 +71,7 @@ func (ircConn *Connection) Connect(ip, port string) error {
 	return err
 }
 
-//Init initalizes the connection and logs in
+//Init initializes the connection and logs in
 func (ircConn *Connection) Init(oauth, nick string) {
 	til := new(TwitchIRCListener)
 	til.ArchiumDataIdentifier = ArchiumDataIdentifier
@@ -96,7 +108,7 @@ func (ircConn *Connection) start() {
 			if ircConn.closed {
 				break
 			}
-			log.E("Error occured", err.Error())
+			log.E("Error occurred", err.Error())
 			ircConn.Reconnect()
 			return
 		}
