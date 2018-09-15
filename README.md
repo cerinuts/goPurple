@@ -4,6 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/cerinuts/goPurple)](https://goreportcard.com/report/github.com/cerinuts/goPurple)
 [![Build Status](https://travis-ci.com/cerinuts/goPurple.svg?branch=master)](https://travis-ci.com/cerinuts/goPurple)
 
+Library to integrate with various systems on twitch.tv
+
 Development happens over at [code.cerinuts.io](https://code.cerinuts.io)
 There is also a [github mirror](https://github.com/cerinuts/goPurple)
 
